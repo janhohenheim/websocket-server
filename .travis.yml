@@ -34,10 +34,8 @@ before_script:
   - cargo install-update -a || true # sometimes nightly breaks stuff, that's okay
 
   # Lint
-  - cd core
   - cargo fmt -- --write-mode=diff
 
 after_success:
   - cargo clippy -- -Z no-trans -D clippy # clippy really loves to break, so it's okay if it fails
-  - cd ..
   - cargo coveralls --all
