@@ -70,7 +70,6 @@ where
                 let (conn_out, conn_in) = mpsc::unbounded();
                 let res = event_handler.on_connect(addr, conn_out);
                 if let Some(id) = res {
-                    println!("Client {}: Connect", id);
                     let (sink, stream) = framed.split();
                     send_channel
                         .send((id.clone(), conn_in, sink))
@@ -97,10 +96,8 @@ where
                     .for_each(move |msg| {
                         let id = id.clone();
                         if let OwnedMessage::Close(_) = msg {
-                            println!("Client {}: Disconnect", id);
                             event_handler.on_disconnect(id);
                         } else {
-                            println!("Client {}: Received message {:?}", id, msg);
                             event_handler.on_message(id, msg);
                         }
                         Ok(())
@@ -132,7 +129,7 @@ where
                         let ok_poll = sink.poll_complete().is_ok();
                         if !ok_send || !ok_poll {
                             println!(
-                                "Client {}: Forced disconnect (failed to receive message)",
+                                "Client {}: Forced disconnect (failed to send message)",
                                 id
                             );
                             event_handler.on_disconnect(id.clone());
