@@ -3,7 +3,7 @@ extern crate futures;
 extern crate futures_cpupool;
 extern crate tokio_core;
 
-pub use self::websocket::message::OwnedMessage;
+pub use self::websocket::message::{OwnedMessage as Message};
 use self::websocket::server::{WsServer, InvalidConnection};
 use self::websocket::async::{Server, MessageCodec};
 use self::websocket::client::async::Framed;
@@ -22,16 +22,15 @@ use std::net::SocketAddr;
 use std::fmt::Display;
 
 
-pub type SendChannel = mpsc::UnboundedSender<OwnedMessage>;
+pub type SendChannel = mpsc::UnboundedSender<Message>;
 pub trait EventHandler {
     type Id: Send + Sync + Clone + Debug + Display;
     fn new() -> Self;
     fn main_loop(&self);
-    fn on_message(&self, id: Self::Id, msg: OwnedMessage);
+    fn on_message(&self, id: Self::Id, msg: Message);
     fn on_connect(&self, addr: SocketAddr, send_channel: SendChannel) -> Option<Self::Id>;
     fn on_disconnect(&self, id: Self::Id);
 }
-
 pub fn start<T>(address: &str, port: u32)
 where
     T: EventHandler + Send + Sync + 'static,
@@ -95,7 +94,7 @@ where
                 stream
                     .for_each(move |msg| {
                         let id = id.clone();
-                        if let OwnedMessage::Close(_) = msg {
+                        if let Message::Close(_) = msg {
                             event_handler.on_disconnect(id);
                         } else {
                             event_handler.on_message(id, msg);
@@ -114,16 +113,16 @@ where
     let send_handler = pool.spawn_fn(move || {
         let remote = remote.clone();
         let event_handler = event_handler_inner.clone();
-        type SinkContent = Framed<TcpStream, MessageCodec<OwnedMessage>>;
+        type SinkContent = Framed<TcpStream, MessageCodec<Message>>;
         type SplitSink = futures::stream::SplitSink<SinkContent>;
         send_channel_in.for_each(
             move |(id, conn_in, sink): (T::Id,
-                                        mpsc::UnboundedReceiver<OwnedMessage>,
+                                        mpsc::UnboundedReceiver<Message>,
                                         SplitSink)| {
                 let sink = Arc::new(RwLock::new(sink));
                 let event_handler = event_handler.clone();
                 remote.spawn(move |_| {
-                    conn_in.for_each(move |msg: OwnedMessage| {
+                    conn_in.for_each(move |msg: Message| {
                         let mut sink = sink.write().unwrap();
                         let ok_send = sink.start_send(msg).is_ok();
                         let ok_poll = sink.poll_complete().is_ok();
