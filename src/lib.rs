@@ -3,7 +3,7 @@ extern crate futures;
 extern crate futures_cpupool;
 extern crate tokio_core;
 
-pub use self::websocket::message::{OwnedMessage as Message};
+pub use self::websocket::message::OwnedMessage as Message;
 use self::websocket::server::{WsServer, InvalidConnection};
 use self::websocket::async::{Server, MessageCodec};
 use self::websocket::client::async::Framed;
@@ -127,10 +127,7 @@ where
                         let ok_send = sink.start_send(msg).is_ok();
                         let ok_poll = sink.poll_complete().is_ok();
                         if !ok_send || !ok_poll {
-                            println!(
-                                "Client {}: Forced disconnect (failed to send message)",
-                                id
-                            );
+                            println!("Client {}: Forced disconnect (failed to send message)", id);
                             event_handler.on_disconnect(id.clone());
                         }
                         Ok(())
