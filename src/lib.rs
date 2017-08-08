@@ -131,7 +131,8 @@ where
                             event_handler.on_disconnect(id.clone());
                         }
                         Ok(())
-                    })
+                    }).wait().unwrap();
+                    Ok(())
                 });
                 Ok(())
             },
